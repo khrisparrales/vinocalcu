@@ -1,254 +1,655 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" class="dark">
 
 <head>
     <meta charset="UTF-8" />
-    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Vinocalcu</title>
+    <title>Vinocalcu v1.16 - Calculadora Financiera</title>
 
-    <!-- Bootstrap CSS -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css"
-        xintegrity="sha384-1BmE4kWBq78iYhFldvKuhfTAU6auU8tT94WrHftjDbrCEXSU1oBoqyl2QvZ6jIW3" crossorigin="anonymous" />
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0fdfa',
+                            100: '#ccfbf1',
+                            400: '#2dd4bf',
+                            500: '#14b8a6',
+                            600: '#0d9488',
+                            900: '#134e4a',
+                        },
+                        darkbg: '#18181b',
+                        darkcard: '#27272a',
+                        darkborder: '#3f3f46',
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- FontAwesome CDN -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    
+    <!-- Google Fonts Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
     <style>
         body {
-            padding: 20px;
-            background-color: #2c2c31; /* Fondo más oscuro */
-            color: #ffffff;
             font-family: 'Inter', sans-serif;
+            background-color: #121215;
+            color: #f4f4f5;
         }
 
-        .card {
-            background-color: #3f3f46; /* Gris más oscuro para las tarjetas */
-            border-radius: 10px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-            padding: 20px;
-            height: 100%;
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-            border: none;
-        }
-
-        .form-control {
-            background-color: #52525b; /* Input de color gris oscuro */
-            color: #ffffff;
-            border: 1px solid #71717a;
-        }
-
-        .btn-primary {
-            background-color: #4fd1c5;
-            border-color: #4fd1c5;
-            color: #1a202c;
-            font-weight: bold;
-        }
-
-        .btn-primary:hover {
-            background-color: #38b2ac;
-            border-color: #38b2ac;
-        }
-
-        .bank-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            cursor: pointer;
-            user-select: none;
-            font-size: 1.25rem;
-            font-weight: bold;
-            color: #4fd1c5;
-        }
-
-        .bank-list {
+        /* Transición suave para listas desplegables */
+        .accordion-content {
             max-height: 0;
             overflow: hidden;
-            transition: max-height 0.5s ease-out;
-            margin-top: 0;
-            border-top: 1px solid #4a5568;
-            padding-top: 10px;
+            transition: max-height 0.35s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
-        .bank-list.active {
+        .accordion-content.open {
             max-height: 500px;
-            margin-top: 10px;
         }
 
-        .list-item {
-            padding: 8px 0;
-            border-bottom: 1px solid #4a5568;
-            text-align: center;
+        .rotate-chevron {
+            transition: transform 0.3s ease;
         }
 
-        .list-item:last-child {
-            border-bottom: none;
+        .rotate-chevron.open {
+            transform: rotate(180deg);
         }
 
-        /* Estilos para el texto en las tarjetas */
-        .card p, .card h2 {
-            color: #e2e8f0;
+        /* Notificación Toast personalizada */
+        #toast {
+            visibility: hidden;
+            min-width: 250px;
+            transform: translateY(100%);
+            transition: transform 0.3s ease, visibility 0.3s;
+        }
+        #toast.show {
+            visibility: visible;
+            transform: translateY(0);
         }
     </style>
 </head>
 
-<body>
-    <div class="container">
-        <h1 class="mb-5 text-center">Vinocalcu v1.15.2</h1>
+<body class="min-h-screen flex flex-col justify-between p-4 md:p-8">
 
-        <div class="row g-4 mt-4">
-            <!-- Columna de calculadora -->
-            <div class="col-12 col-md-4">
-                <div class="card">
-                    <h2 class="card-title text-center">Calculadora</h2>
-                    <input type="text" name="base" id="base" onkeyup="if(event.keyCode===13){myFunction()}" class="form-control" placeholder="Ingrese el valor base" />
-                    <button class="btn btn-primary w-100 mt-2" id="btnfunction" onclick="myFunction()">Calcular</button>
-                    
-                    <h2 class="card-title text-center mt-4">Resultados Sin Cuotas</h2>
-                    <p class="mb-1">El valor base sin iva es</p>
-                    <p id="baseiva" class="fw-bold"></p>
-                    <p class="mb-1">El valor con débito es:</p>
-                    <p id="resultadosumatotal" class="fw-bold"></p>
-                    <p class="mb-1">El valor con corriente es:</p>
-                    <p id="resultadosumaporcentaje" class="fw-bold"></p>
+    <header class="max-w-7xl mx-auto w-full mb-8">
+        <div class="flex flex-col md:flex-row items-center justify-between gap-4 border-b border-zinc-800 pb-5">
+            <div class="flex items-center gap-3">
+                <div class="bg-teal-500/10 p-3 rounded-2xl border border-teal-500/20 text-teal-400">
+                    <i class="fa-solid fa-calculator text-2xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-2xl md:text-3xl font-bold tracking-tight text-white flex items-center gap-2">
+                        Vinocalcu <span class="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-teal-500/20 text-teal-300 border border-teal-500/30">v1.16</span>
+                    </h1>
+                    <p class="text-xs text-zinc-400">Simulador de Pagos, Tarjetas, Cuotas y Credinovi</p>
                 </div>
             </div>
 
-            <!-- Columna de resultados con cuotas fijas -->
-            <div class="col-12 col-md-4">
-                <div class="card">
-                    <h2 class="card-title text-center">Resultados con Cuotas Fijas</h2>
-                    <p class="mb-1">El valor a 12 meses:</p>
-                    <p id="resultado12c" class="fw-bold"></p>
-                    <p class="mb-1">con cuotas de <span id="cuota12c" class="fw-bold"></span></p>
-                    
-                    <p class="mb-1">El valor a 9 meses:</p>
-                    <p id="resultado9c" class="fw-bold"></p>
-                    <p class="mb-1">con cuotas de <span id="cuota9c" class="fw-bold"></span></p>
-                    
-                    <p class="mb-1">El valor a 6 meses:</p>
-                    <p id="resultado6c" class="fw-bold"></p>
-                    <p class="mb-1">con cuotas de <span id="cuota6c" class="fw-bold"></span></p>
-                    
-                    <p class="mb-1">El valor a 3 meses:</p>
-                    <p id="resultado3c" class="fw-bold"></p>
-                    <p class="mb-1">con cuotas de <span id="cuota3c" class="fw-bold"></span></p>
-                </div>
+            <!-- Ajuste de IVA configurable -->
+            <div class="flex items-center gap-2 bg-zinc-800/80 p-2 px-4 rounded-xl border border-zinc-700/60 text-sm">
+            <!-- Ajuste de IVA (Fijo al 15%) -->
+            <div class="flex items-center gap-2 bg-zinc-800/80 p-2 px-4 rounded-xl border border-zinc-700/60 text-sm">
+                <label for="ivaRate" class="text-zinc-400 font-medium">Tasa IVA:</label>
+                <select id="ivaRate" onchange="myFunction()" class="bg-zinc-900 text-teal-400 font-bold rounded-lg px-2 py-1 outline-none border border-zinc-700 focus:border-teal-500">
+                    <option value="1.15" selected>15% (1.15)</option>
+                </select>
             </div>
-            
-            <!-- Columna de bancos -->
-            <div class="col-12 col-md-4">
-                <div class="card">
-                    <h2 class="card-title text-center">Bancos</h2>
-                    <div class="bank-container">
-                        <div class="datafast">
-                            <div class="bank-header active">
-                                <span>DATAFAST</span>
-                                <i class="fa-solid fa-caret-down"></i>
-                            </div>
-                            <div class="bank-list active">
-                                <ul class="list-unstyled">
-                                    <li class="list-item">BANCO PICHINCHA</li>
-                                    <li class="list-item">BANCO PACIFICO</li>
-                                    <li class="list-item">BANCO GUAYAQUIL</li>
-                                    <li class="list-item">DINERS CLUB</li>
-                                    <li class="list-item">TITANIUM</li>
-                                </ul>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto w-full grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+
+        <!-- COLUMNA 1: Ingreso de Valor Base y Resumen Sin Cuotas -->
+        <section class="bg-zinc-900 border border-zinc-800 rounded-2xl p-5 flex flex-col justify-between shadow-xl">
+            <div>
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-lg font-bold text-white flex items-center gap-2">
+                        <i class="fa-solid fa-money-bill-wave text-teal-400"></i> Entrada
+                    </h2>
+                    <span class="text-xs text-zinc-500">Valor Inicial</span>
+                </div>
+
+                <div class="space-y-4">
+                    <div>
+                        <label for="base" class="block text-xs font-medium text-zinc-400 mb-1">Monto Base ($)</label>
+                        <div class="relative">
+                            <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-zinc-400 font-bold">$</span>
+                            <input type="text" id="base" autofocus placeholder="0.00" oninput="myFunction()" onkeyup="if(event.key==='Enter'){myFunction()}"
+                                class="w-full pl-8 pr-10 py-3 bg-zinc-800 text-white rounded-xl border border-zinc-700 focus:border-teal-400 focus:ring-1 focus:ring-teal-400 text-lg font-semibold outline-none transition" />
+                            <button onclick="clearInput()" title="Limpiar" class="absolute inset-y-0 right-0 pr-3 flex items-center text-zinc-500 hover:text-zinc-300">
+                                <i class="fa-solid fa-xmark"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Botones de acceso rápido -->
+                    <div class="flex gap-2">
+                        <button onclick="setQuickVal(100)" class="flex-1 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-xs text-zinc-300 rounded-lg border border-zinc-700 font-medium transition">$100</button>
+                        <button onclick="setQuickVal(250)" class="flex-1 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-xs text-zinc-300 rounded-lg border border-zinc-700 font-medium transition">$250</button>
+                        <button onclick="setQuickVal(500)" class="flex-1 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-xs text-zinc-300 rounded-lg border border-zinc-700 font-medium transition">$500</button>
+                    </div>
+
+                    <button onclick="myFunction()" id="btnfunction" class="w-full py-3 bg-teal-500 hover:bg-teal-400 text-zinc-950 font-bold rounded-xl transition flex items-center justify-center gap-2 shadow-lg shadow-teal-500/20 active:scale-[0.98]">
+                        <i class="fa-solid fa-calculator"></i> Calcular Todo
+                    </button>
+                </div>
+
+                <hr class="my-5 border-zinc-800" />
+
+                <!-- Resultados Directos (Sin Cuotas) -->
+                <h3 class="text-sm font-semibold text-zinc-300 mb-3 flex items-center gap-2">
+                    <i class="fa-solid fa-receipt text-teal-400"></i> Sin Cuotas / Contado
+                </h3>
+
+                <div class="space-y-3 text-sm">
+                    <div class="bg-zinc-800/60 p-3 rounded-xl border border-zinc-800">
+                        <div class="text-xs text-zinc-400 mb-1">Base Sin IVA:</div>
+                        <div class="flex justify-between items-center">
+                            <span id="baseiva" class="text-lg font-bold text-teal-300">$0.00</span>
+                            <button onclick="copyText('baseiva')" class="text-xs text-zinc-500 hover:text-teal-400 transition" title="Copiar Base Sin IVA"><i class="fa-regular fa-copy"></i></button>
+                        </div>
+                    </div>
+
+                    <div class="bg-zinc-800/60 p-3 rounded-xl border border-zinc-800">
+                        <div class="flex justify-between items-center text-xs text-zinc-400 mb-1">
+                            <span>Débito (+4%):</span>
+                            <div class="flex items-center gap-1">
+                                <span>sin IVA:</span>
+                                <strong id="debitoSinIva" class="text-teal-300 font-semibold">$0.00</strong>
+                                <button onclick="copyText('debitoSinIva')" class="text-zinc-500 hover:text-teal-400 transition" title="Copiar Débito sin IVA"><i class="fa-regular fa-copy"></i></button>
                             </div>
                         </div>
+                        <div class="flex justify-between items-center">
+                            <span id="resultadosumatotal" class="font-semibold text-white text-base">$0.00</span>
+                        </div>
+                    </div>
 
-                        <div class="medianet mt-4">
-                            <div class="bank-header active">
-                                <span>MEDIANET</span>
-                                <i class="fa-solid fa-caret-down"></i>
+                    <div class="bg-zinc-800/60 p-3 rounded-xl border border-zinc-800">
+                        <div class="flex justify-between items-center text-xs text-zinc-400 mb-1">
+                            <span>Corriente (+6%):</span>
+                            <div class="flex items-center gap-1">
+                                <span>sin IVA:</span>
+                                <strong id="corrienteSinIva" class="text-teal-300 font-semibold">$0.00</strong>
+                                <button onclick="copyText('corrienteSinIva')" class="text-zinc-500 hover:text-teal-400 transition" title="Copiar Corriente sin IVA"><i class="fa-regular fa-copy"></i></button>
                             </div>
-                            <div class="bank-list active">
-                                <ul class="list-unstyled">
-                                    <li class="list-item">BANCO BOLIVARIANO</li>
-                                    <li class="list-item">BANCO PRODUBANCO</li>
-                                    <li class="list-item">BANCO INTERNACIONAL</li>
-                                    <li class="list-item">BANCO AMAZONAS</li>
-                                    <li class="list-item">BANCO SOLIDARIO - ALIA</li>
-                                </ul>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span id="resultadosumaporcentaje" class="font-semibold text-white text-base">$0.00</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- COLUMNA 2: Cuotas Fijas Estándar (Diferidos) -->
+        <section class="bg-zinc-900 border border-zinc-800 rounded-2xl p-5 shadow-xl flex flex-col justify-between">
+            <div>
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-lg font-bold text-white flex items-center gap-2">
+                        <i class="fa-solid fa-credit-card text-teal-400"></i> Cuotas Fijas
+                    </h2>
+                    <span class="text-xs text-zinc-500">Tarjetas</span>
+                </div>
+
+                <div class="space-y-3">
+                    <!-- 12 Meses -->
+                    <div class="p-3 bg-zinc-800/60 rounded-xl border border-zinc-800 hover:border-zinc-700 transition">
+                        <div class="flex justify-between items-center text-xs text-zinc-400 mb-1">
+                            <span>12 Meses (+18%)</span>
+                            <div class="flex items-center gap-1 text-[11px]">
+                                <span>sin IVA:</span>
+                                <strong id="c12SinIva" class="text-teal-300 font-semibold">$0.00</strong>
+                                <button onclick="copyText('c12SinIva')" class="text-zinc-500 hover:text-teal-400 transition" title="Copiar sin IVA"><i class="fa-regular fa-copy"></i></button>
+                            </div>
+                        </div>
+                        <div class="flex justify-between items-baseline">
+                            <span id="resultado12c" class="font-semibold text-white text-sm">$0.00</span>
+                            <div class="flex items-center gap-1">
+                                <span id="cuota12c" class="text-base font-bold text-teal-300">$0.00 / mes</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 9 Meses -->
+                    <div class="p-3 bg-zinc-800/60 rounded-xl border border-zinc-800 hover:border-zinc-700 transition">
+                        <div class="flex justify-between items-center text-xs text-zinc-400 mb-1">
+                            <span>9 Meses (+15%)</span>
+                            <div class="flex items-center gap-1 text-[11px]">
+                                <span>sin IVA:</span>
+                                <strong id="c9SinIva" class="text-teal-300 font-semibold">$0.00</strong>
+                                <button onclick="copyText('c9SinIva')" class="text-zinc-500 hover:text-teal-400 transition" title="Copiar sin IVA"><i class="fa-regular fa-copy"></i></button>
+                            </div>
+                        </div>
+                        <div class="flex justify-between items-baseline">
+                            <span id="resultado9c" class="font-semibold text-white text-sm">$0.00</span>
+                            <div class="flex items-center gap-1">
+                                <span id="cuota9c" class="text-base font-bold text-teal-300">$0.00 / mes</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 6 Meses -->
+                    <div class="p-3 bg-zinc-800/60 rounded-xl border border-zinc-800 hover:border-zinc-700 transition">
+                        <div class="flex justify-between items-center text-xs text-zinc-400 mb-1">
+                            <span>6 Meses (+12%)</span>
+                            <div class="flex items-center gap-1 text-[11px]">
+                                <span>sin IVA:</span>
+                                <strong id="c6SinIva" class="text-teal-300 font-semibold">$0.00</strong>
+                                <button onclick="copyText('c6SinIva')" class="text-zinc-500 hover:text-teal-400 transition" title="Copiar sin IVA"><i class="fa-regular fa-copy"></i></button>
+                            </div>
+                        </div>
+                        <div class="flex justify-between items-baseline">
+                            <span id="resultado6c" class="font-semibold text-white text-sm">$0.00</span>
+                            <div class="flex items-center gap-1">
+                                <span id="cuota6c" class="text-base font-bold text-teal-300">$0.00 / mes</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 3 Meses -->
+                    <div class="p-3 bg-zinc-800/60 rounded-xl border border-zinc-800 hover:border-zinc-700 transition">
+                        <div class="flex justify-between items-center text-xs text-zinc-400 mb-1">
+                            <span>3 Meses (+9%)</span>
+                            <div class="flex items-center gap-1 text-[11px]">
+                                <span>sin IVA:</span>
+                                <strong id="c3SinIva" class="text-teal-300 font-semibold">$0.00</strong>
+                                <button onclick="copyText('c3SinIva')" class="text-zinc-500 hover:text-teal-400 transition" title="Copiar sin IVA"><i class="fa-regular fa-copy"></i></button>
+                            </div>
+                        </div>
+                        <div class="flex justify-between items-baseline">
+                            <span id="resultado3c" class="font-semibold text-white text-sm">$0.00</span>
+                            <div class="flex items-center gap-1">
+                                <span id="cuota3c" class="text-base font-bold text-teal-300">$0.00 / mes</span>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
+            <p class="text-xs text-zinc-500 mt-4 text-center">Aplica para Datafast / Medianet diferido con interés.</p>
+        </section>
+
+        <!-- COLUMNA 3: CÁLCULO CREDINOVI -->
+        <section class="bg-gradient-to-b from-teal-950/30 to-zinc-900 border border-teal-500/30 rounded-2xl p-5 shadow-xl flex flex-col justify-between relative overflow-hidden">
+            <div class="absolute -top-12 -right-12 w-28 h-28 bg-teal-500/10 rounded-full blur-xl pointer-events-none"></div>
+
+            <div>
+                <div class="flex items-center justify-between mb-2">
+                    <h2 class="text-lg font-bold text-teal-300 flex items-center gap-2">
+                        <i class="fa-solid fa-chart-line text-teal-400"></i> Credinovi
+                    </h2>
+                    <span class="text-xs bg-teal-500/20 text-teal-300 font-semibold px-2 py-0.5 rounded border border-teal-500/30">+80% Base</span>
+                </div>
+                
+                <div class="text-xs text-zinc-400 mb-4 flex items-center justify-between">
+                    <span>Monto Base Credinovi:</span>
+                    <span class="inline-flex items-center gap-1 bg-teal-500/10 px-2 py-0.5 rounded border border-teal-500/20">
+                        <strong id="credinoviBaseVal" class="text-white font-bold">$0.00</strong>
+                        <button onclick="copyText('credinoviBaseVal')" class="text-xs text-zinc-400 hover:text-teal-300 transition" title="Copiar Base Credinovi"><i class="fa-regular fa-copy"></i></button>
+                    </span>
+                </div>
+
+                <div class="space-y-3">
+                    <!-- Credinovi 6 Meses (+4.58%) -->
+                    <div class="p-3 bg-zinc-900/80 rounded-xl border border-teal-500/20 hover:border-teal-500/40 transition">
+                        <div class="flex justify-between items-center text-xs text-zinc-400 mb-1">
+                            <span class="font-medium text-zinc-200">6 Meses (+4.58%)</span>
+                            <span class="text-teal-400 font-semibold">Cuota</span>
+                        </div>
+                        <div class="flex justify-between items-baseline">
+                            <div class="text-xs text-zinc-300">
+                                Total: <span id="cn6Total" class="font-semibold text-white">$0.00</span>
+                                <div class="text-[10px] text-zinc-400 flex items-center gap-1">
+                                    sin IVA: <span id="cn6SinIva" class="text-teal-300 font-semibold">$0.00</span>
+                                    <button onclick="copyText('cn6SinIva')" class="text-zinc-500 hover:text-teal-400 transition" title="Copiar sin IVA"><i class="fa-regular fa-copy text-[10px]"></i></button>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-1">
+                                <span id="cn6Cuota" class="text-base font-bold text-teal-300">$0.00 /m</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Credinovi 12 Meses (+8.60%) -->
+                    <div class="p-3 bg-zinc-900/80 rounded-xl border border-teal-500/20 hover:border-teal-500/40 transition">
+                        <div class="flex justify-between items-center text-xs text-zinc-400 mb-1">
+                            <span class="font-medium text-zinc-200">12 Meses (+8.60%)</span>
+                            <span class="text-teal-400 font-semibold">Cuota</span>
+                        </div>
+                        <div class="flex justify-between items-baseline">
+                            <div class="text-xs text-zinc-300">
+                                Total: <span id="cn12Total" class="font-semibold text-white">$0.00</span>
+                                <div class="text-[10px] text-zinc-400 flex items-center gap-1">
+                                    sin IVA: <span id="cn12SinIva" class="text-teal-300 font-semibold">$0.00</span>
+                                    <button onclick="copyText('cn12SinIva')" class="text-zinc-500 hover:text-teal-400 transition" title="Copiar sin IVA"><i class="fa-regular fa-copy text-[10px]"></i></button>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-1">
+                                <span id="cn12Cuota" class="text-base font-bold text-teal-300">$0.00 /m</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Credinovi 18 Meses (+12.86%) -->
+                    <div class="p-3 bg-zinc-900/80 rounded-xl border border-teal-500/20 hover:border-teal-500/40 transition">
+                        <div class="flex justify-between items-center text-xs text-zinc-400 mb-1">
+                            <span class="font-medium text-zinc-200">18 Meses (+12.86%)</span>
+                            <span class="text-teal-400 font-semibold">Cuota</span>
+                        </div>
+                        <div class="flex justify-between items-baseline">
+                            <div class="text-xs text-zinc-300">
+                                Total: <span id="cn18Total" class="font-semibold text-white">$0.00</span>
+                                <div class="text-[10px] text-zinc-400 flex items-center gap-1">
+                                    sin IVA: <span id="cn18SinIva" class="text-teal-300 font-semibold">$0.00</span>
+                                    <button onclick="copyText('cn18SinIva')" class="text-zinc-500 hover:text-teal-400 transition" title="Copiar sin IVA"><i class="fa-regular fa-copy text-[10px]"></i></button>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-1">
+                                <span id="cn18Cuota" class="text-base font-bold text-teal-300">$0.00 /m</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Credinovi 24 Meses (+17.12%) -->
+                    <div class="p-3 bg-zinc-900/80 rounded-xl border border-teal-500/20 hover:border-teal-500/40 transition">
+                        <div class="flex justify-between items-center text-xs text-zinc-400 mb-1">
+                            <span class="font-medium text-zinc-200">24 Meses (+17.12%)</span>
+                            <span class="text-teal-400 font-semibold">Cuota</span>
+                        </div>
+                        <div class="flex justify-between items-baseline">
+                            <div class="text-xs text-zinc-300">
+                                Total: <span id="cn24Total" class="font-semibold text-white">$0.00</span>
+                                <div class="text-[10px] text-zinc-400 flex items-center gap-1">
+                                    sin IVA: <span id="cn24SinIva" class="text-teal-300 font-semibold">$0.00</span>
+                                    <button onclick="copyText('cn24SinIva')" class="text-zinc-500 hover:text-teal-400 transition" title="Copiar sin IVA"><i class="fa-regular fa-copy text-[10px]"></i></button>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-1">
+                                <span id="cn24Cuota" class="text-base font-bold text-teal-300">$0.00 /m</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <p class="text-[11px] text-teal-400/70 mt-3 text-center">Financiamiento especial Credinovi</p>
+        </section>
+
+        <!-- COLUMNA 4: Clasificación por Bancos y Redes -->
+        <section class="bg-zinc-900 border border-zinc-800 rounded-2xl p-5 shadow-xl flex flex-col justify-between">
+            <div>
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-lg font-bold text-white flex items-center gap-2">
+                        <i class="fa-solid fa-building-columns text-teal-400"></i> Redes Bancarias
+                    </h2>
+                    <span class="text-xs text-zinc-500">Guía POS</span>
+                </div>
+
+                <div class="space-y-4">
+                    <!-- DATAFAST Accordion -->
+                    <div class="border border-zinc-800 rounded-xl overflow-hidden bg-zinc-800/40">
+                        <button onclick="toggleAccordion('datafast-list', 'datafast-icon')" class="w-full p-3 bg-zinc-800/80 hover:bg-zinc-800 flex justify-between items-center text-teal-400 font-bold text-sm transition">
+                            <span class="flex items-center gap-2"><i class="fa-solid fa-credit-card text-xs"></i> DATAFAST</span>
+                            <i id="datafast-icon" class="fa-solid fa-chevron-down rotate-chevron open text-xs"></i>
+                        </button>
+                        <div id="datafast-list" class="accordion-content open px-3 py-2 bg-zinc-900/50">
+                            <ul class="divide-y divide-zinc-800/80 text-xs text-zinc-300">
+                                <li class="py-2 flex items-center justify-between"><span>BANCO PICHINCHA</span> <i class="fa-solid fa-check text-teal-500 text-[10px]"></i></li>
+                                <li class="py-2 flex items-center justify-between"><span>BANCO PACIFICO</span> <i class="fa-solid fa-check text-teal-500 text-[10px]"></i></li>
+                                <li class="py-2 flex items-center justify-between"><span>BANCO GUAYAQUIL</span> <i class="fa-solid fa-check text-teal-500 text-[10px]"></i></li>
+                                <li class="py-2 flex items-center justify-between"><span>DINERS CLUB</span> <i class="fa-solid fa-check text-teal-500 text-[10px]"></i></li>
+                                <li class="py-2 flex items-center justify-between"><span>TITANIUM</span> <i class="fa-solid fa-check text-teal-500 text-[10px]"></i></li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <!-- MEDIANET Accordion -->
+                    <div class="border border-zinc-800 rounded-xl overflow-hidden bg-zinc-800/40">
+                        <button onclick="toggleAccordion('medianet-list', 'medianet-icon')" class="w-full p-3 bg-zinc-800/80 hover:bg-zinc-800 flex justify-between items-center text-teal-400 font-bold text-sm transition">
+                            <span class="flex items-center gap-2"><i class="fa-solid fa-network-wired text-xs"></i> MEDIANET</span>
+                            <i id="medianet-icon" class="fa-solid fa-chevron-down rotate-chevron open text-xs"></i>
+                        </button>
+                        <div id="medianet-list" class="accordion-content open px-3 py-2 bg-zinc-900/50">
+                            <ul class="divide-y divide-zinc-800/80 text-xs text-zinc-300">
+                                <li class="py-2 flex items-center justify-between"><span>BANCO BOLIVARIANO</span> <i class="fa-solid fa-check text-teal-500 text-[10px]"></i></li>
+                                <li class="py-2 flex items-center justify-between"><span>BANCO PRODUBANCO</span> <i class="fa-solid fa-check text-teal-500 text-[10px]"></i></li>
+                                <li class="py-2 flex items-center justify-between"><span>BANCO INTERNACIONAL</span> <i class="fa-solid fa-check text-teal-500 text-[10px]"></i></li>
+                                <li class="py-2 flex items-center justify-between"><span>BANCO AMAZONAS</span> <i class="fa-solid fa-check text-teal-500 text-[10px]"></i></li>
+                                <li class="py-2 flex items-center justify-between"><span>BANCO SOLIDARIO - ALIA</span> <i class="fa-solid fa-check text-teal-500 text-[10px]"></i></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <p class="text-[11px] text-zinc-500 mt-4 text-center">Consulte la red según la tarjeta del cliente</p>
+        </section>
+
+    </main>
+
+    <!-- Notificación flotante de copiado -->
+    <div id="toast" class="fixed bottom-6 right-6 bg-teal-500 text-zinc-950 px-4 py-2.5 rounded-xl font-bold shadow-2xl flex items-center gap-2 text-sm z-50">
+        <i class="fa-solid fa-circle-check"></i> <span id="toastMsg">Copiado al portapapeles</span>
     </div>
-    
-    <!-- Option 1: Bootstrap Bundle with Popper -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"
-        xintegrity="sha384-ka7Sk0Gln4gmtz2MlQnikT1wXgYsOg+OMhuP+IlRH9sENBO0LRn5q+8nbTov4+1p" crossorigin="anonymous"></script>
+
+    <footer class="max-w-7xl mx-auto w-full text-center text-xs text-zinc-600 border-t border-zinc-800/80 pt-4">
+        Vinocalcu v1.16 &copy; 2026 - Herramienta de cálculo financiero rápido.
+    </footer>
 
     <script>
-        /**Lógica de la calculadora */
-        let valorBase;
-        let valorsuma;
-        let valorporcentaje;
-        let valorbasesuma;
-        let valor12;
-        let valordebito;
+        /**
+         * Formatea números a representación de moneda ($0.00)
+         */
+        function formatMoney(amount) {
+            if (isNaN(amount) || amount === null) return "$0.00";
+            return new Intl.NumberFormat('en-US', {
+                style: 'currency',
+                currency: 'USD',
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            }).format(amount);
+        }
+
+        /**
+         * Función principal de cálculos
+         */
         function myFunction() {
-            /**convertir valor base a un decimal */
-            /**validar que funcione con comas */
-            valorBase = document.getElementById("base").value;
-            valorBase = valorBase.replace(",", ".");
-            valoriva = 1.15;
+            // Obtenemos el valor base del input
+            let inputElement = document.getElementById("base");
+            let rawValue = inputElement.value;
 
-            valorBase = parseFloat(valorBase);
-            console.log(valorBase);
-            /**Al valor sumarle 40 */
-            valorsuma = valorBase + 0;
+            // Reemplazar coma por punto para admitir ambos formatos
+            rawValue = rawValue.replace(",", ".");
+            let valorBase = parseFloat(rawValue);
 
-            /**Al valor sumarle el 10% */
-            valorporcentaje = valorsuma + Math.floor(valorsuma * 6) / 100;
-            valordebito = valorsuma + Math.floor(valorsuma * 4) / 100;
+            // Tasa de IVA seleccionada (defecto: 1.15)
+            let ivaSelect = document.getElementById("ivaRate");
+            let valoriva = parseFloat(ivaSelect.value) || 1.15;
+
+            // Validación si no es un número válido o está vacío
+            if (isNaN(valorBase) || valorBase <= 0) {
+                resetResults();
+                return;
+            }
+
+            // --- 1. CÁLCULOS ESTÁNDAR ---
+            let valorsuma = valorBase;
+
+            // Débito (+4%) y Corriente (+6%)
+            let valordebito = valorsuma + Math.floor(valorsuma * 4) / 100;
+            let valorporcentaje = valorsuma + Math.floor(valorsuma * 6) / 100;
+
+            // Cuotas Fijas Estándar (+18%, +15%, +12%, +9%)
             let valor12c = valorsuma + Math.floor(valorsuma * 18) / 100;
             let valor9c = valorsuma + Math.floor(valorsuma * 15) / 100;
             let valor6c = valorsuma + Math.floor(valorsuma * 12) / 100;
             let valor3c = valorsuma + Math.floor(valorsuma * 9) / 100;
-            valorporcentaje = valorporcentaje.toFixed(3);
-            
-            valorbasesuma = valorBase + Math.floor(valorBase * 10) / 100;
-            valorbasesuma = valorbasesuma.toFixed(3);
-            valor12 = valorBase - Math.floor(valorBase * 12) / 100;
-            valor12 = valor12.toFixed(3);
-            let debitoiva = valordebito / valoriva;
-            /**Mostrar el valor en la pagina */
-            document.getElementById("baseiva").innerHTML = (valorBase / valoriva).toFixed(2);
-            document.getElementById("resultadosumatotal").innerHTML = valordebito.toFixed(2) + ' sin iva ' + (valordebito / valoriva).toFixed(2);
 
-            document.getElementById("resultadosumaporcentaje").innerHTML =
-                valorporcentaje + ' sin iva ' + (valorporcentaje / valoriva).toFixed(2);
-            document.getElementById("resultado12c").innerHTML =
-                valor12c.toFixed(2) + ' sin iva ' + (valor12c / valoriva).toFixed(2);
-            document.getElementById("resultado9c").innerHTML = valor9c.toFixed(2) + ' sin iva ' + (valor9c / valoriva).toFixed(2);
-            document.getElementById("resultado6c").innerHTML = valor6c.toFixed(2) + ' sin iva ' + (valor6c / valoriva).toFixed(2);
-            document.getElementById("resultado3c").innerHTML = valor3c.toFixed(2) + ' sin iva ' + (valor3c / valoriva).toFixed(2);
+            // --- MOSTRAR RESULTADOS ESTÁNDAR ---
+            document.getElementById("baseiva").innerText = formatMoney(valorBase / valoriva);
 
-            document.getElementById("cuota12c").innerHTML =
-                (valor12c / 12).toFixed(2);
-            document.getElementById("cuota9c").innerHTML =
-                (valor9c / 9).toFixed(2);
-            document.getElementById("cuota6c").innerHTML =
-                (valor6c / 6).toFixed(2);
-            document.getElementById("cuota3c").innerHTML =
-                (valor3c / 3).toFixed(2);
+            // Débito y Corriente
+            document.getElementById("debitoSinIva").innerText = formatMoney(valordebito / valoriva);
+            document.getElementById("resultadosumatotal").innerText = formatMoney(valordebito);
+
+            document.getElementById("corrienteSinIva").innerText = formatMoney(valorporcentaje / valoriva);
+            document.getElementById("resultadosumaporcentaje").innerText = formatMoney(valorporcentaje);
+
+            // Cuotas fijas (Totales, sin IVA y cuotas)
+            document.getElementById("c12SinIva").innerText = formatMoney(valor12c / valoriva);
+            document.getElementById("resultado12c").innerText = formatMoney(valor12c);
+            document.getElementById("cuota12c").innerText = `${formatMoney(valor12c / 12)} / m`;
+
+            document.getElementById("c9SinIva").innerText = formatMoney(valor9c / valoriva);
+            document.getElementById("resultado9c").innerText = formatMoney(valor9c);
+            document.getElementById("cuota9c").innerText = `${formatMoney(valor9c / 9)} / m`;
+
+            document.getElementById("c6SinIva").innerText = formatMoney(valor6c / valoriva);
+            document.getElementById("resultado6c").innerText = formatMoney(valor6c);
+            document.getElementById("cuota6c").innerText = `${formatMoney(valor6c / 6)} / m`;
+
+            document.getElementById("c3SinIva").innerText = formatMoney(valor3c / valoriva);
+            document.getElementById("resultado3c").innerText = formatMoney(valor3c);
+            document.getElementById("cuota3c").innerText = `${formatMoney(valor3c / 3)} / m`;
+
+            // --- 2. CÁLCULOS CREDINOVI ---
+            let credinoviBase = valorBase + (valorBase * 0.80);
+            document.getElementById("credinoviBaseVal").innerText = formatMoney(credinoviBase);
+
+            // Credinovi 6 Meses (+4.58%)
+            let cn6Total = credinoviBase * (1 + 0.0458);
+            document.getElementById("cn6Total").innerText = formatMoney(cn6Total);
+            document.getElementById("cn6SinIva").innerText = formatMoney(cn6Total / valoriva);
+            document.getElementById("cn6Cuota").innerText = `${formatMoney(cn6Total / 6)} /m`;
+
+            // Credinovi 12 Meses (+8.60%)
+            let cn12Total = credinoviBase * (1 + 0.0860);
+            document.getElementById("cn12Total").innerText = formatMoney(cn12Total);
+            document.getElementById("cn12SinIva").innerText = formatMoney(cn12Total / valoriva);
+            document.getElementById("cn12Cuota").innerText = `${formatMoney(cn12Total / 12)} /m`;
+
+            // Credinovi 18 Meses (+12.86%)
+            let cn18Total = credinoviBase * (1 + 0.1286);
+            document.getElementById("cn18Total").innerText = formatMoney(cn18Total);
+            document.getElementById("cn18SinIva").innerText = formatMoney(cn18Total / valoriva);
+            document.getElementById("cn18Cuota").innerText = `${formatMoney(cn18Total / 18)} /m`;
+
+            // Credinovi 24 Meses (+17.12%)
+            let cn24Total = credinoviBase * (1 + 0.1712);
+            document.getElementById("cn24Total").innerText = formatMoney(cn24Total);
+            document.getElementById("cn24SinIva").innerText = formatMoney(cn24Total / valoriva);
+            document.getElementById("cn24Cuota").innerText = `${formatMoney(cn24Total / 24)} /m`;
         }
 
-        /**Lógica para las listas colapsables */
-        const headers = document.querySelectorAll('.bank-header');
-        
-        headers.forEach(header => {
-            header.addEventListener('click', () => {
-                const list = header.nextElementSibling;
-                header.classList.toggle('active');
-                list.classList.toggle('active');
-            });
-        });
+        /**
+         * Reiniciar campos cuando el valor sea 0 o inválido
+         */
+        function resetResults() {
+            document.getElementById("baseiva").innerText = "$0.00";
+
+            document.getElementById("debitoSinIva").innerText = "$0.00";
+            document.getElementById("resultadosumatotal").innerText = "$0.00";
+
+            document.getElementById("corrienteSinIva").innerText = "$0.00";
+            document.getElementById("resultadosumaporcentaje").innerText = "$0.00";
+
+            document.getElementById("c12SinIva").innerText = "$0.00";
+            document.getElementById("resultado12c").innerText = "$0.00";
+            document.getElementById("cuota12c").innerText = "$0.00 / m";
+
+            document.getElementById("c9SinIva").innerText = "$0.00";
+            document.getElementById("resultado9c").innerText = "$0.00";
+            document.getElementById("cuota9c").innerText = "$0.00 / m";
+
+            document.getElementById("c6SinIva").innerText = "$0.00";
+            document.getElementById("resultado6c").innerText = "$0.00";
+            document.getElementById("cuota6c").innerText = "$0.00 / m";
+
+            document.getElementById("c3SinIva").innerText = "$0.00";
+            document.getElementById("resultado3c").innerText = "$0.00";
+            document.getElementById("cuota3c").innerText = "$0.00 / m";
+
+            document.getElementById("credinoviBaseVal").innerText = "$0.00";
+
+            document.getElementById("cn6Total").innerText = "$0.00";
+            document.getElementById("cn6SinIva").innerText = "$0.00";
+            document.getElementById("cn6Cuota").innerText = "$0.00 /m";
+
+            document.getElementById("cn12Total").innerText = "$0.00";
+            document.getElementById("cn12SinIva").innerText = "$0.00";
+            document.getElementById("cn12Cuota").innerText = "$0.00 /m";
+
+            document.getElementById("cn18Total").innerText = "$0.00";
+            document.getElementById("cn18SinIva").innerText = "$0.00";
+            document.getElementById("cn18Cuota").innerText = "$0.00 /m";
+
+            document.getElementById("cn24Total").innerText = "$0.00";
+            document.getElementById("cn24SinIva").innerText = "$0.00";
+            document.getElementById("cn24Cuota").innerText = "$0.00 /m";
+        }
+
+        /**
+         * Botones de atajo rápido de valores
+         */
+        function setQuickVal(val) {
+            document.getElementById("base").value = val;
+            myFunction();
+        }
+
+        /**
+         * Limpiar el input de búsqueda
+         */
+        function clearInput() {
+            document.getElementById("base").value = "";
+            myFunction();
+            document.getElementById("base").focus();
+        }
+
+        /**
+         * Desplegar u ocultar acordeones de bancos
+         */
+        function toggleAccordion(listId, iconId) {
+            const list = document.getElementById(listId);
+            const icon = document.getElementById(iconId);
+            list.classList.toggle('open');
+            icon.classList.toggle('open');
+        }
+
+        /**
+         * Copiar texto al portapapeles con notificación
+         */
+        function copyText(elementId) {
+            const el = document.getElementById(elementId);
+            if (!el) return;
+            const textToCopy = el.innerText || el.textContent;
+
+            // Método seguro de copiado
+            const tempInput = document.createElement("input");
+            tempInput.value = textToCopy;
+            document.body.appendChild(tempInput);
+            tempInput.select();
+            document.execCommand("copy");
+            document.body.removeChild(tempInput);
+
+            showToast(`Copiado: ${textToCopy}`);
+        }
+
+        function showToast(msg) {
+            const toast = document.getElementById("toast");
+            const toastMsg = document.getElementById("toastMsg");
+            toastMsg.innerText = msg;
+            toast.classList.add("show");
+            setTimeout(() => {
+                toast.classList.remove("show");
+            }, 2000);
+        }
     </script>
 </body>
 
